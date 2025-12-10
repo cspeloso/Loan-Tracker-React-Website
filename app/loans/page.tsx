@@ -34,7 +34,7 @@ export default async function LoansPage() {
 
             <h1 style={{fontSize:24, marginBottom:16}}>Your Loans</h1>
 
-            <table border={1} cellPadding={8} cellSpacing={0}>
+            <table className="loan-table" border={1} cellPadding={8} cellSpacing={0}>
                 <thead>
                     <tr>
                         <th>Name</th>
