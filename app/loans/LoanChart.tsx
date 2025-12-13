@@ -8,54 +8,70 @@ import {
     CategoryScale,
     Tooltip,
     Legend,
+    TimeScale
 } from "chart.js";
-import { join } from "path";
+import type { ChartOptions } from "chart.js"
 import { Line } from "react-chartjs-2";
+import "chartjs-adapter-date-fns";
+import { Loan } from "@/types/loan"
 
 ChartJS.register(
     LineElement,
     PointElement,
     LinearScale,
     CategoryScale,
+    TimeScale,
     Tooltip,
     Legend
 );
-
-type Loan = {
-    id: number;
-    name: string;
-    principal: number;
-    interestRate: number;
-    termInMonths: number;
-    monthlyPayment: number;
-    startDate: string;
-};
 
 type LoanChartProps = {
     data: Loan[];
 }
 
-function generateAmortizationSchedule(principal: number, annualRate: number, termMonths: number, monthlyPayment: number) {
+function generateAmortizationSchedule(principal: number, annualRate: number, termMonths: number, monthlyPayment: number, startDate: Date) {
+
     const monthlyRate = annualRate / 100 / 12;
 
     let balance = principal;
 
-    const schedule: { month: number; balance: number }[] = [];
+    const schedule: { date: Date; balance: number }[] = [];
 
-    for (let month = 1; month <= termMonths; month++) {
+    let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
+    for (let month = 0; month < termMonths; month++) {
         const interest = balance * monthlyRate;
         const principalPaid = monthlyPayment - interest;
-
-        balance = balance - principalPaid;
+        balance -= principalPaid;
 
         //  guard against tiny negative numbers at the end
         if (balance < 0)
             balance = 0;
 
-        schedule.push({ month, balance });
+        schedule.push({
+            date: new Date(currentDate),
+            balance
+        });
+
+        currentDate = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth() + 1,
+            currentDate.getDate()
+        );
     }
 
     return schedule;
+}
+
+function colorForIndex(i: number) {
+    const hue = (i * 67) % 360;
+    return `hsl(${hue} 70% 45%)`;
+}
+
+function parseDateOnlyLocal(dateStr: string) {
+    const d10 = dateStr.slice(0,10);
+    const [y,m,d] = d10.split("-").map(Number);
+    return new Date(y, m-1, d);
 }
 
 export default function LoanChart({ data }: LoanChartProps) {
@@ -63,51 +79,89 @@ export default function LoanChart({ data }: LoanChartProps) {
     if (data.length === 0)
         return <p>No loans to chart.</p>;
 
-    const schedules = data.map((loan) => ({
-        loan,
-        schedule: generateAmortizationSchedule(loan.principal, loan.interestRate, loan.termInMonths, loan.monthlyPayment)
-    }));
+    const money = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0
+    });
 
-    const maxMonths = Math.max(...schedules.map((s) => s.schedule.length));
 
-    const labels = Array.from({ length: maxMonths }, (_, i) => `Month ${i + 1}`);
+    const datasets = data.map((loan, i) => {
+        const schedule = generateAmortizationSchedule(
+            loan.principal,
+            loan.interestRate,
+            loan.termInMonths,
+            loan.monthlyPayment,
+            parseDateOnlyLocal(loan.startDate)
+        );
 
-    const datasets = schedules.map(({ loan, schedule }) => ({
-        label: `Remaining Balance - ${loan.name}`,
-        data: schedule.map(s => ({ x: s.month, y: s.balance })),
-        borderWidth: 2,
-        tension: 0.3
-    }));
+        const c = colorForIndex(i);
 
-    const options = {
+        return {
+            label: loan.name,
+            data: schedule.map(p => ({
+                x: p.date,
+                y: p.balance
+            })),
+            borderColor: c,
+            backgroundColor: c,
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            originalPrincipal: loan.principal
+        };
+    });
+
+    const options: ChartOptions<"line"> = {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+            legend: {
+                position: "top",
+                labels: { usePointStyle: true, boxWidth: 10 }
+            },
+            tooltip: {
+                callbacks: {
+                    title: (items) => {
+                        const d = items[0]?.parsed?.x;
+                        if (d == null) return "";
+                        return new Date(d).toLocaleDateString("en-US", {
+                            month: "2-digit",
+                            day: "2-digit",
+                            year: "numeric"
+                        });
+                    },
+                    label: (ctx) => {
+                        const principal = (ctx.dataset as any).originalPrincipal;
+                        const balance = Number(ctx.parsed.y);
+                        const percentage = ((1 - balance / principal) * 100).toFixed(1);
+                        const monthsRemaining = ctx.dataset.data.length - ctx.dataIndex - 1;
+                        return [
+                            `${ctx.dataset.label}: ${money.format(balance)} (${percentage}% paid)`,
+                            `Months Remaining: ${monthsRemaining}`
+                        ]
+                    }
+                }
+            }
+        },
         scales: {
             x: {
-                type: "linear" as const,
-                title: { display: true, text: "Month" },
-                ticks: { precision: 0 }
+                type: "time" as const,
+                time: { unit: "year" },
+                ticks: { autoSkip: true, maxRotation: 0 },
             },
             y: {
                 beginAtZero: true,
-                title: { display: true, text: "Remaining Balance" }
+                ticks: { callback: (v) => money.format(Number(v)) }
             }
         }
     }
 
-    const chartData = {
-        labels,
-        datasets: schedules.map(({ loan, schedule }, index) => ({
-            label: `Remaining Balance - ${loan.name}`,
-            data: schedule.map((s) => s.balance),
-            borderWidth: 2,
-            tension: 0.3
-        }))
-    };
-
     return (
-        <div className="LoanChart" style={{ maxWidth: 600, background: "white", padding: 16 }}>
-            <Line data={{datasets}} options={options} />
+        <div className="LoanChart" style={{ maxWidth: 900, height: 260, background: "white", padding: 16 }}>
+            <Line data={{ datasets }} options={options} />
         </div>
     );
 }

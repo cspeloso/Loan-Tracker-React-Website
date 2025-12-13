@@ -47,6 +47,20 @@ export default function LoansTable({ initialLoans }: { initialLoans: Loan[] }) {
         }
     }
 
+    const totalPrincipal = loans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0)
+    const totalMonthlyPayment = loans.reduce((sum, l) => sum + (Number(l.monthlyPayment) || 0), 0)
+    const interestRates = loans.map(l => l.interestRate).filter(r => r > 0);
+
+    const minRate = interestRates.length ? Math.min(...interestRates) : null;
+    const maxRate = interestRates.length ? Math.max(...interestRates) : null;
+
+
+    const money = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0
+    });
+
     return (
         <table className="loan-table" border={1} cellPadding={8} cellSpacing={0}>
             <thead>
@@ -85,6 +99,18 @@ export default function LoansTable({ initialLoans }: { initialLoans: Loan[] }) {
                         </td>
                     </tr>
                 ))}
+                {loans.length > 1 && (
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td><strong>{money.format(totalPrincipal)}</strong></td>
+                        <td><strong>{minRate}% — {maxRate}%</strong></td>
+                        <td>—</td>
+                        <td><strong>{money.format(totalMonthlyPayment)}</strong></td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>—</td>
+                    </tr>
+                )}
                 {loans.length === 0 && (
                     <tr>
                         <td colSpan={8} style={{textAlign: "center"}}>

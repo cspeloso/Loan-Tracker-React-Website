@@ -17,7 +17,7 @@ export default function CreateLoanClient() {
                 interestRate: 0,
                 termInMonths: 0,
                 monthlyPayment: 0,
-                startDate: Date()
+                startDate: new Date().toISOString().slice(0,10)
             }}
             onSubmit={async (newLoan) => {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/loans/`, {
