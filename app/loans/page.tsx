@@ -1,4 +1,5 @@
 import LoanChart from './LoanChart';
+import LoansTable from './LoansTable';
 
 type Loan = {
     id: number;
@@ -34,30 +35,8 @@ export default async function LoansPage() {
 
             <h1 style={{fontSize:24, marginBottom:16}}>Your Loans</h1>
 
-            <table className="loan-table" border={1} cellPadding={8} cellSpacing={0}>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Principal</th>
-                        <th>Interest Rate</th>
-                        <th>Term (Months)</th>
-                        <th>Monthly Payment</th>
-                        <th>Start Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loans.map((loan) => (
-                        <tr key={loan.id}>
-                            <td>{loan.name}</td>
-                            <td>${loan.principal}</td>
-                            <td>{loan.interestRate}%</td>
-                            <td>{loan.termInMonths}</td>
-                            <td>${loan.monthlyPayment}</td>
-                            <td>{new Date(loan.startDate).toLocaleDateString()}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <LoansTable initialLoans={loans} />
+            
         </main>
     );
 }

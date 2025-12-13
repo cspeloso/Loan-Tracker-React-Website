@@ -24,13 +24,52 @@ body {
   color: var(--foreground); */
   font-family: Arial, Helvetica, sans-serif;
 }
-
 html,body {
   color:#212529 !important;
   background:rgb(246, 246, 246) !important;
 }
-
+p {
+  font-size:18px;
+  line-height:22px;
+  margin-bottom:5px;
+}
 .loan-table th, .loan-table td {
     padding: 10px;
     border: 1px solid black;
+}
+.important-text {
+  color:red;
+  font-weight:bolder;
+}
+.delete-loan-button button {
+  text-decoration:none;
+  font-weight:bolder;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:rgb(132, 132, 200);
+}
+
+form.loan-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap:10px;
+    /* background:rgb(244, 244, 244); */
+    padding:20px;
+    width:50%;
+    margin:0 auto;
+}
+
+form.loan-form > div {
+  display:flex;
+  flex-direction:column;
+  /* border:1px solid black; */
+}
+form.loan-form label {
+  font-weight:bold;
+}
+form.loan-form input {
+  border:1px solid rgb(213, 213, 213);
+  padding:10px;
+  border-radius:5px;
 }

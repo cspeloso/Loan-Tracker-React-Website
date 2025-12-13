@@ -1,8 +1,13 @@
 "use client";
 
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import { useEffect } from "react";
 
 export default function Header() {
+
+  useEffect(() => {
+    import("bootstrap/dist/js/bootstrap.bundle.min.js");
+  }, []);
+
   return (
     <nav className="navbar navbar-light bg-light px-3">
       <div className="container-fluid d-flex flex-wrap align-items-center justify-content-between">
